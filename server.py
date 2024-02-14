@@ -28,6 +28,10 @@ async def chat_endpoint(chat_input: ChatInput):
         id=request_id, choices=[Choice.from_message(response_message)]
     )
 
+@app.get("/ping")
+async def ping():
+    return "pong"
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Glaive Function API")
     parser.add_argument(

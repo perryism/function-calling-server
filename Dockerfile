@@ -20,4 +20,8 @@ COPY . /app
 
 EXPOSE 8000
 
+ENV MODEL=glaiveai/glaive-function-calling-v2-small
+
+RUN python3.10 warmer.py $MODEL
+
 CMD python3.10 server.py

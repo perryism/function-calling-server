@@ -3,7 +3,7 @@ import uuid
 
 import torch
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from server_types import ChatCompletion, ChatInput, Choice
@@ -11,10 +11,16 @@ from inference import generate_message
 
 app = FastAPI(title="Glaive Function API")
 
+@app.post("/vertexai")
+async def vertexai(request: Request):
+    data = await request.json()
+    instances = data["instances"]
+    chat_input = ChatInput.parse_obj(instances[0])
+    prediction = await chat_endpoint(chat_input)
+    return { "predictions": [prediction.dict()] }
 
 @app.post("/v1/chat/completions", response_model=ChatCompletion)
 async def chat_endpoint(chat_input: ChatInput):
-    
     request_id = str(uuid.uuid4())
     response_message = generate_message(
         messages=chat_input.messages,

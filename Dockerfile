@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.2.2-runtime-ubuntu20.04 
+FROM nvidia/cuda:11.2.2-runtime-ubuntu20.04
 
 RUN apt-get update --yes --quiet
 RUN apt install software-properties-common -y && add-apt-repository ppa:deadsnakes/ppa -y && \
@@ -16,12 +16,14 @@ COPY requirements.txt /app
 
 RUN python3.10 -m pip install -r requirements.txt
 
-COPY . /app
-
-EXPOSE 8000
+COPY warmer.py /app
 
 ENV MODEL=glaiveai/glaive-function-calling-v2-small
 
 RUN python3.10 warmer.py $MODEL
+
+COPY . /app
+
+EXPOSE 8000
 
 CMD python3.10 server.py

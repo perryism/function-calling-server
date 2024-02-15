@@ -1,13 +1,15 @@
 import argparse
 import uuid
 
-import torch
-import uvicorn
 from fastapi import FastAPI, Request
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from server_types import ChatCompletion, ChatInput, Choice
 from inference import generate_message
+import logging, sys
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Glaive Function API")
 
@@ -22,7 +24,7 @@ async def vertexai(request: Request):
 @app.post("/v1/chat/completions", response_model=ChatCompletion)
 async def chat_endpoint(chat_input: ChatInput):
     request_id = str(uuid.uuid4())
-    response_message = generate_message(
+    response_message = try_generate_message(
         messages=chat_input.messages,
         functions=chat_input.functions,
         temperature=chat_input.temperature,
@@ -33,6 +35,19 @@ async def chat_endpoint(chat_input: ChatInput):
     return ChatCompletion(
         id=request_id, choices=[Choice.from_message(response_message)]
     )
+
+from demjson3 import JSONDecodeError
+
+def try_generate_message(messages, functions, temperature, model, tokenizer, attempt=3):
+    try:
+        return generate_message(messages, functions, temperature, model, tokenizer)
+    except JSONDecodeError as e:
+        if attempt > 0:
+            logging.warning(f"Failed to generate message: {e}. Retrying {attempt} more times.")
+            return try_generate_message(messages, functions, temperature, model, tokenizer, attempt-1)
+        else:
+            logger.error(f"Failed to generate message: {e}")
+            raise e
 
 @app.get("/ping")
 async def ping():
